@@ -12,11 +12,13 @@ func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		m.showPresets()
 	case "2":
 		m.mode = modeSoma
+		m.refreshDelegate()
 		m.status = "loading SomaFM"
 		m.err = ""
 		return m, m.loadSoma()
 	case "3":
 		m.mode = modeXiph
+		m.refreshDelegate()
 		m.status = "enter a Xiph genre/search or stream URL"
 		m.err = ""
 		m.input.Focus()
