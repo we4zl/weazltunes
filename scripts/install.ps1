@@ -155,7 +155,7 @@ function Check-GoVersion {
 }
 
 Ensure-Dependency "go" @("GoLang.Go") "golang" "go"
-Ensure-Dependency "mpv" @("shinchiro.mpv") "mpv" "mpv"
+Ensure-Dependency "mpv" @("9P3JFR0CLLL6") "mpv" "mpv"
 Ensure-Dependency "ffmpeg" @("Gyan.FFmpeg", "Gyan.FFmpeg.Essentials", "BtbN.FFmpeg.GPL") "ffmpeg" "ffmpeg"
 Check-GoVersion
 
