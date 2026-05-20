@@ -3,6 +3,7 @@
 package player
 
 import (
+	"bufio"
 	"net"
 	"os"
 	"path/filepath"
@@ -24,13 +25,24 @@ func (c *socketControl) args() []string {
 }
 
 func (c *socketControl) command(command string) error {
+	_, err := c.request(command)
+	return err
+}
+
+func (c *socketControl) request(command string) (string, error) {
 	conn, err := net.DialTimeout("unix", c.path, time.Second)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer conn.Close()
-	_, err = conn.Write([]byte(command))
-	return err
+	if err := conn.SetDeadline(time.Now().Add(time.Second)); err != nil {
+		return "", err
+	}
+	if _, err := conn.Write([]byte(command)); err != nil {
+		return "", err
+	}
+	response, err := bufio.NewReader(conn).ReadString('\n')
+	return response, err
 }
 
 func (c *socketControl) close() {

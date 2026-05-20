@@ -3,6 +3,7 @@
 package player
 
 import (
+	"bufio"
 	"os"
 	"strconv"
 	"time"
@@ -22,13 +23,21 @@ func (c *namedPipeControl) args() []string {
 }
 
 func (c *namedPipeControl) command(command string) error {
-	file, err := os.OpenFile(c.path, os.O_WRONLY, 0)
+	_, err := c.request(command)
+	return err
+}
+
+func (c *namedPipeControl) request(command string) (string, error) {
+	file, err := os.OpenFile(c.path, os.O_RDWR, 0)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer file.Close()
-	_, err = file.WriteString(command)
-	return err
+	if _, err := file.WriteString(command); err != nil {
+		return "", err
+	}
+	response, err := bufio.NewReader(file).ReadString('\n')
+	return response, err
 }
 
 func (c *namedPipeControl) close() {}

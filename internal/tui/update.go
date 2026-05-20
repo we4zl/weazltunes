@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"time"
+
 	"github.com/bprendie/weazltunes/internal/audio"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -23,9 +25,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.Blur()
 	case errMsg:
 		m.err = msg.err.Error()
+	case titleMsg:
+		if msg.title != "" {
+			m.trackTitle = msg.title
+		}
 	case tickMsg:
 		m.drainMeter()
 		m.visualizer.Step(m.playing != nil && !m.paused, m.energy)
+		if m.playing != nil && !m.paused && time.Time(msg).Sub(m.titlePoll) > 2*time.Second {
+			m.titlePoll = time.Time(msg)
+			cmds = append(cmds, fetchTitle(m.player))
+		}
 		cmds = append(cmds, tick())
 	}
 

@@ -24,6 +24,8 @@ func (m Model) View() string {
 	b.WriteString("\n\n")
 	b.WriteString(m.styles.panel.Width(contentWidth).Render(m.visualizer.View(m.styles)))
 	b.WriteString("\n")
+	b.WriteString(m.trackPanel(contentWidth))
+	b.WriteString("\n")
 	b.WriteString(m.list.View())
 	b.WriteString("\n")
 	b.WriteString(m.statusLine())
@@ -31,6 +33,18 @@ func (m Model) View() string {
 		b.WriteString("\n" + m.styles.error.Render(m.err))
 	}
 	return m.styles.frame.Render(b.String())
+}
+
+func (m Model) trackPanel(width int) string {
+	title := m.trackTitle
+	if title == "" {
+		title = "waiting for stream title"
+	}
+	if m.playing == nil {
+		title = "no track metadata"
+	}
+	line := "track: " + title
+	return m.styles.track.Width(width).Render(ansi.Wordwrap(line, max(20, width-4), " /_-:"))
 }
 
 func (m Model) statusLine() string {

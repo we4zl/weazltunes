@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"time"
+
 	"github.com/bprendie/weazltunes/internal/audio"
 	"github.com/bprendie/weazltunes/internal/directory"
 )
@@ -12,6 +14,8 @@ func (m *Model) play(st directory.Station) {
 	}
 	m.playing = &st
 	m.paused = false
+	m.trackTitle = ""
+	m.titlePoll = time.Time{}
 	m.startMeter(st.URL)
 	m.status = "playing " + st.Name
 	m.err = ""
@@ -40,6 +44,8 @@ func (m *Model) stop() {
 	m.stopMeter()
 	m.playing = nil
 	m.paused = false
+	m.trackTitle = ""
+	m.titlePoll = time.Time{}
 	m.status = "stopped"
 }
 

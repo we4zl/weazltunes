@@ -17,6 +17,7 @@ type styles struct {
 	frame    lipgloss.Style
 	header   lipgloss.Style
 	panel    lipgloss.Style
+	track    lipgloss.Style
 	status   lipgloss.Style
 	help     lipgloss.Style
 	selected lipgloss.Style
@@ -36,6 +37,12 @@ func newStyles() styles {
 		panel: lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder()).
 			BorderForeground(border).
+			Background(panel).
+			Padding(0, 1),
+		track: lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(crushPurple).
+			Foreground(crushGold).
 			Background(panel).
 			Padding(0, 1),
 		status:   lipgloss.NewStyle().Foreground(crushMint).Bold(true),

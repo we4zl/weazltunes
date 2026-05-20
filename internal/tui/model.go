@@ -38,6 +38,8 @@ type Model struct {
 	err        string
 	playing    *directory.Station
 	paused     bool
+	trackTitle string
+	titlePoll  time.Time
 	energy     audio.Sample
 	renaming   *directory.Station
 	width      int
@@ -63,6 +65,7 @@ type loadedMsg struct {
 }
 
 type errMsg struct{ err error }
+type titleMsg struct{ title string }
 type tickMsg time.Time
 
 func New(cfg config.Config) Model {
