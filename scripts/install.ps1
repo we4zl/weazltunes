@@ -138,7 +138,8 @@ function Ensure-Dependency($Command, $WingetIds, $ChocoName, $ScoopName) {
 }
 
 function Get-GoVersion {
-    $raw = (& go version)
+    $goExe = (Get-Command "go" -ErrorAction Stop).Source
+    $raw = (& $goExe "version")
     if ($raw -match "go([0-9]+\.[0-9]+)") {
         return [version]$Matches[1]
     }
@@ -156,7 +157,7 @@ function Check-GoVersion {
 
 Ensure-Dependency "go" @("GoLang.Go") "golang" "go"
 Ensure-Dependency "mpv" @("9P3JFR0CLLL6") "mpv" "mpv"
-Ensure-Dependency "ffmpeg" @("Gyan.FFmpeg", "Gyan.FFmpeg.Essentials", "BtbN.FFmpeg.GPL") "ffmpeg" "ffmpeg"
+Ensure-Dependency "ffmpeg" @("Gyan.FFmpeg.Essentials", "BtbN.FFmpeg.GPL", "Gyan.FFmpeg") "ffmpeg" "ffmpeg"
 Check-GoVersion
 
 New-Item -ItemType Directory -Force -Path $BinDir, $GoCache, $GoModCache | Out-Null
@@ -166,7 +167,8 @@ Push-Location $RepoRoot
 try {
     $env:GOCACHE = $GoCache
     $env:GOMODCACHE = $GoModCache
-    & go build -buildvcs=false -o $BinPath ./cmd/weazltunes
+    $goExe = (Get-Command "go" -ErrorAction Stop).Source
+    & $goExe "build" "-buildvcs=false" "-o" $BinPath "./cmd/weazltunes"
     if ($LASTEXITCODE -ne 0) {
         throw "go build failed"
     }
