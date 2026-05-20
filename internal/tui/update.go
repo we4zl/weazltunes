@@ -67,7 +67,7 @@ func (m *Model) drainMeter() {
 func (m *Model) resize(width, height int) {
 	m.width = width
 	m.height = height
-	m.list.SetSize(max(20, width-8), max(12, height-18))
+	m.list.SetSize(max(20, width-8), max(8, height-21))
 	m.input.Width = max(20, width-20)
 }
 

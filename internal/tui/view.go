@@ -5,6 +5,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -43,8 +44,11 @@ func (m Model) trackPanel(width int) string {
 	if m.playing == nil {
 		title = "no track metadata"
 	}
-	line := "track: " + title
-	return m.styles.track.Width(width).Render(ansi.Wordwrap(line, max(20, width-4), " /_-:"))
+	label := m.styles.help.Render("track: ")
+	titleWidth := max(8, width-lipgloss.Width("track: ")-6)
+	title = ansi.Truncate(title, titleWidth, "...")
+	line := label + gradientText(title, trackStops)
+	return m.styles.track.Width(width).Height(1).Render(line)
 }
 
 func (m Model) statusLine() string {

@@ -20,6 +20,12 @@ var logoStops = []rgb{
 	hexRGB(0xFFB84D),
 }
 
+var trackStops = []rgb{
+	hexRGB(0xF7D774),
+	hexRGB(0xFFB84D),
+	hexRGB(0xF25D94),
+}
+
 func renderLogo(s string, width int) string {
 	wordmark := gradientLogo(s)
 	logoWidth := maxLineWidth(s)
@@ -67,6 +73,18 @@ func gradientLogo(s string) string {
 		if y < len(lines)-1 {
 			out.WriteByte('\n')
 		}
+	}
+	return out.String()
+}
+
+func gradientText(s string, stops []rgb) string {
+	width := max(1, lipgloss.Width(s))
+	var out strings.Builder
+	x := 0
+	for _, r := range s {
+		t := float64(x) / float64(max(1, width-1))
+		out.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(sampleGradient(t, stops))).Bold(true).Render(string(r)))
+		x += lipgloss.Width(string(r))
 	}
 	return out.String()
 }
