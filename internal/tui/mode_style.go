@@ -16,7 +16,5 @@ func modeTitle(m mode) string {
 		label = "my stations"
 		color = crushMint
 	}
-	rail := lipgloss.NewStyle().Foreground(crushPurple).Bold(true).Render("╱╱")
-	text := lipgloss.NewStyle().Foreground(color).Bold(true).Render(" " + label)
-	return rail + text
+	return lipgloss.NewStyle().Foreground(color).Bold(true).Render(label)
 }
