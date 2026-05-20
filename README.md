@@ -71,6 +71,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 It installs missing dependencies with `winget`, `choco`, or `scoop` when one of
 those package managers is available, builds `weazltunes.exe`, installs it into
 `%APPDATA%\weazltunes\bin`, and adds that directory to your user `PATH`.
+For playback, the Windows installer uses the `shinchiro.mpv` winget package and
+adds the discovered `mpv.exe` directory to your user `PATH` when the package
+installer does not do that itself.
 Use `-SkipLaunch` when you want install-only:
 
 ```powershell

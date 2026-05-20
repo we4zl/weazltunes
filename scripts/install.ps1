@@ -40,6 +40,49 @@ function Add-UserPath($PathToAdd) {
     Write-Host "Added $PathToAdd to your user PATH"
 }
 
+function Find-Executable($Name) {
+    $found = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($found) {
+        return $found.Source
+    }
+
+    $candidates = @()
+    if ($env:LOCALAPPDATA) {
+        $candidates += Join-Path $env:LOCALAPPDATA "Programs\mpv\$Name"
+        $candidates += Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages"
+    }
+    if ($env:ProgramFiles) {
+        $candidates += Join-Path $env:ProgramFiles "mpv\$Name"
+    }
+    if (${env:ProgramFiles(x86)}) {
+        $candidates += Join-Path ${env:ProgramFiles(x86)} "mpv\$Name"
+    }
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate -PathType Leaf) {
+            return $candidate
+        }
+        if (Test-Path $candidate -PathType Container) {
+            $hit = Get-ChildItem -Path $candidate -Filter $Name -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($hit) {
+                return $hit.FullName
+            }
+        }
+    }
+    return $null
+}
+
+function Ensure-CommandPath($Command, $ExecutableName) {
+    if (Test-Command $Command) {
+        return $true
+    }
+    $exe = Find-Executable $ExecutableName
+    if (-not $exe) {
+        return $false
+    }
+    Add-UserPath (Split-Path -Parent $exe)
+    return (Test-Command $Command)
+}
+
 function Install-Winget($Ids) {
     if (-not (Test-Command "winget")) {
         return $false
@@ -89,7 +132,7 @@ function Ensure-Dependency($Command, $WingetIds, $ChocoName, $ScoopName) {
     Write-Host "$Command was not found. Trying to install it..."
     $installed = (Install-Winget $WingetIds) -or (Install-Choco $ChocoName) -or (Install-Scoop $ScoopName)
     Update-SessionPath
-    if (-not $installed -or -not (Test-Command $Command)) {
+    if (-not $installed -or -not (Ensure-CommandPath $Command "$Command.exe")) {
         throw "Could not install or locate $Command. Install it manually, then rerun this script."
     }
 }
@@ -112,7 +155,7 @@ function Check-GoVersion {
 }
 
 Ensure-Dependency "go" @("GoLang.Go") "golang" "go"
-Ensure-Dependency "mpv" @("shinchiro.mpv", "mpv.net") "mpv" "mpv"
+Ensure-Dependency "mpv" @("shinchiro.mpv") "mpv" "mpv"
 Ensure-Dependency "ffmpeg" @("Gyan.FFmpeg", "Gyan.FFmpeg.Essentials", "BtbN.FFmpeg.GPL") "ffmpeg" "ffmpeg"
 Check-GoVersion
 
