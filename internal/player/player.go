@@ -2,12 +2,13 @@ package player
 
 import (
 	"errors"
+	"io"
 	"os/exec"
-	"syscall"
 )
 
 type Player struct {
 	cmd    *exec.Cmd
+	stdin  io.WriteCloser
 	done   chan struct{}
 	paused bool
 }
@@ -22,11 +23,16 @@ func (p *Player) Play(url string) error {
 	if err != nil {
 		return errors.New("mpv was not found; install mpv to play streams")
 	}
-	cmd := exec.Command(bin, "--no-video", "--force-window=no", url)
+	cmd := exec.Command(bin, "--no-video", "--force-window=no", "--input-terminal=no", "--input-file=-", url)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 	p.cmd = cmd
+	p.stdin = stdin
 	p.done = make(chan struct{})
 	p.paused = false
 	go func() {
@@ -40,11 +46,10 @@ func (p *Player) TogglePause() (bool, error) {
 	if p.cmd == nil || p.cmd.Process == nil {
 		return false, errors.New("nothing is playing")
 	}
-	signal := syscall.SIGSTOP
-	if p.paused {
-		signal = syscall.SIGCONT
+	if p.stdin == nil {
+		return p.paused, errors.New("mpv control pipe is not available")
 	}
-	if err := syscall.Kill(p.cmd.Process.Pid, signal); err != nil {
+	if _, err := io.WriteString(p.stdin, "cycle pause\n"); err != nil {
 		return p.paused, err
 	}
 	p.paused = !p.paused
@@ -55,14 +60,16 @@ func (p *Player) Stop() {
 	if p.cmd == nil || p.cmd.Process == nil {
 		return
 	}
-	if p.paused {
-		_ = syscall.Kill(p.cmd.Process.Pid, syscall.SIGCONT)
+	if p.stdin != nil {
+		_, _ = io.WriteString(p.stdin, "quit\n")
+		_ = p.stdin.Close()
 	}
 	_ = p.cmd.Process.Kill()
 	if p.done != nil {
 		<-p.done
 	}
 	p.cmd = nil
+	p.stdin = nil
 	p.done = nil
 	p.paused = false
 }
