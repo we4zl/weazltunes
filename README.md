@@ -62,6 +62,21 @@ jacking into the UI:
 WEAZLTUNES_SKIP_LAUNCH=1 ./scripts/install.sh
 ```
 
+On Windows, run the PowerShell installer from the repo root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+```
+
+It installs missing dependencies with `winget`, `choco`, or `scoop` when one of
+those package managers is available, builds `weazltunes.exe`, installs it into
+`%APPDATA%\weazltunes\bin`, and adds that directory to your user `PATH`.
+Use `-SkipLaunch` when you want install-only:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -SkipLaunch
+```
+
 ## Requirements And The Stack
 
 - Go 1.25 or newer
