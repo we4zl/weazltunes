@@ -51,6 +51,9 @@ func (m Model) trackPanel(width int) string {
 }
 
 func (m Model) statusLine() string {
+	if m.searching {
+		return m.styles.status.Render(m.spinner.View() + " " + ansi.Wordwrap(m.status, max(20, m.width-6), " /_-"))
+	}
 	if m.playing != nil {
 		state := "now: "
 		if m.paused {

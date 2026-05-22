@@ -13,9 +13,8 @@ func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "2":
 		m.mode = modeSoma
 		m.refreshDelegate()
-		m.status = "loading SomaFM"
-		m.err = ""
-		return m, m.loadSoma()
+		spin := m.beginSearch("loading SomaFM")
+		return m, tea.Batch(spin, m.loadSoma())
 	case "3":
 		m.showXiphSearch()
 		return m, noop
@@ -64,9 +63,8 @@ func handleEnter(m Model) (Model, tea.Cmd) {
 			m.input.Blur()
 			return m, nil
 		}
-		m.status = "searching Xiph"
-		m.err = ""
-		return m, m.searchXiph(m.input.Value())
+		spin := m.beginSearch("searching Xiph")
+		return m, tea.Batch(spin, m.searchXiph(m.input.Value()))
 	}
 	if item, ok := m.list.SelectedItem().(stationItem); ok {
 		m.play(directoryStation(item))

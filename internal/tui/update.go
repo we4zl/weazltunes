@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bprendie/weazltunes/internal/audio"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,13 +19,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd != nil {
 			return m, cmd
 		}
+	case spinner.TickMsg:
+		if m.searching {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			cmds = append(cmds, cmd)
+		}
 	case loadedMsg:
 		m.setStations(msg.stations)
 		m.status = msg.status
 		m.err = ""
+		m.searching = false
 		m.input.Blur()
 	case errMsg:
 		m.err = msg.err.Error()
+		m.searching = false
 	case titleMsg:
 		if msg.title != "" {
 			m.trackTitle = msg.title
@@ -43,6 +52,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m = next
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
+}
+
+func (m *Model) beginSearch(status string) tea.Cmd {
+	m.status = status
+	m.err = ""
+	m.searching = true
+	return m.spinner.Tick
 }
 
 func (m *Model) drainMeter() {

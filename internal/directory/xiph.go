@@ -126,7 +126,17 @@ func (c Client) radioBrowserSearch(ctx context.Context, query string) ([]Station
 	if query != "" {
 		params.Set("tag", query)
 	}
-	body, err := c.getString(ctx, "https://api.radio-browser.info/json/stations/search?"+params.Encode())
+	body, err := c.getString(ctx, "https://de1.api.radio-browser.info/json/stations/search?"+params.Encode())
+	if err != nil {
+		return nil, err
+	}
+	stations, err := parseRadioBrowserStations(body)
+	if err != nil || len(stations) > 0 || query == "" {
+		return stations, err
+	}
+	params.Del("tag")
+	params.Set("name", query)
+	body, err = c.getString(ctx, "https://de1.api.radio-browser.info/json/stations/search?"+params.Encode())
 	if err != nil {
 		return nil, err
 	}

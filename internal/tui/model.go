@@ -9,9 +9,11 @@ import (
 	"github.com/bprendie/weazltunes/internal/directory"
 	"github.com/bprendie/weazltunes/internal/player"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/harmonica"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type mode int
@@ -33,9 +35,11 @@ type Model struct {
 	meter      *audio.Meter
 	list       list.Model
 	input      textinput.Model
+	spinner    spinner.Model
 	mode       mode
 	status     string
 	err        string
+	searching  bool
 	playing    *directory.Station
 	paused     bool
 	trackTitle string
@@ -78,12 +82,23 @@ func New(cfg config.Config) Model {
 		player:     player.New(),
 		list:       stations,
 		input:      input,
+		spinner:    newSpinner(),
 		mode:       modePresets,
 		status:     "ready",
 		visualizer: NewVisualizer(harmonica.FPS(30)),
 	}
 	m.setStations(presetStations(cfg))
 	return m
+}
+
+func newSpinner() spinner.Model {
+	frames := []string{
+		lipgloss.NewStyle().Foreground(crushGold).Render("●"),
+		lipgloss.NewStyle().Foreground(crushPink).Render("●"),
+		lipgloss.NewStyle().Foreground(crushPurple).Render("●"),
+		lipgloss.NewStyle().Foreground(crushMint).Render("●"),
+	}
+	return spinner.New(spinner.WithSpinner(spinner.Spinner{Frames: frames, FPS: time.Second / 8}))
 }
 
 func (m Model) Init() tea.Cmd {
