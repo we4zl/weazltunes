@@ -5,6 +5,7 @@ import (
 
 	"github.com/bprendie/weazltunes/internal/config"
 	"github.com/bprendie/weazltunes/internal/directory"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestStationFromURL(t *testing.T) {
@@ -52,5 +53,37 @@ func TestConfigStationHelpers(t *testing.T) {
 	preset := presetFromStation(directory.Station{Name: "Station", URL: "https://example.com/station"})
 	if preset.Name != "Station" || preset.URL != "https://example.com/station" {
 		t.Fatalf("unexpected preset: %#v", preset)
+	}
+}
+
+func TestThreeShowsXiphWithoutTypingIntoInput(t *testing.T) {
+	model := New(config.Config{Presets: []config.Preset{{Name: "Preset", URL: "https://example.com/preset"}}})
+	next, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
+	got := next.(Model)
+
+	if got.mode != modeXiph {
+		t.Fatalf("mode = %v, want modeXiph", got.mode)
+	}
+	if !got.input.Focused() {
+		t.Fatal("expected input to be focused")
+	}
+	if got.input.Value() != "" {
+		t.Fatalf("input value = %q, want empty", got.input.Value())
+	}
+	if len(got.list.Items()) != 0 {
+		t.Fatalf("list items = %d, want 0", len(got.list.Items()))
+	}
+}
+
+func TestSlashFocusesInputWithoutTypingSlash(t *testing.T) {
+	model := New(config.Config{})
+	next, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	got := next.(Model)
+
+	if !got.input.Focused() {
+		t.Fatal("expected input to be focused")
+	}
+	if got.input.Value() != "" {
+		t.Fatalf("input value = %q, want empty", got.input.Value())
 	}
 }

@@ -17,11 +17,8 @@ func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		m.err = ""
 		return m, m.loadSoma()
 	case "3":
-		m.mode = modeXiph
-		m.refreshDelegate()
-		m.status = "enter a Xiph genre/search or stream URL"
-		m.err = ""
-		m.input.Focus()
+		m.showXiphSearch()
+		return m, noop
 	case "4":
 		m.showMyStations()
 	case "ctrl+p":
@@ -40,6 +37,7 @@ func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		return handleEnter(m)
 	case "/":
 		m.input.Focus()
+		return m, noop
 	case "esc":
 		m.renaming = nil
 		m.input.SetValue("")

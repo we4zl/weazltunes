@@ -21,6 +21,15 @@ func (m *Model) showMyStations() {
 	m.err = ""
 }
 
+func (m *Model) showXiphSearch() {
+	m.mode = modeXiph
+	m.refreshDelegate()
+	m.setStations(nil)
+	m.status = "enter a Xiph genre/search or stream URL"
+	m.err = ""
+	m.input.Focus()
+}
+
 func (m *Model) setStations(stations []directory.Station) {
 	m.refreshDelegate()
 	items := make([]list.Item, 0, len(stations))
