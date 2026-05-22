@@ -23,6 +23,10 @@ func (m Model) searchXiph(q string) tea.Cmd {
 		if err != nil {
 			return errMsg{err}
 		}
-		return loadedMsg{stations: stations, status: fmt.Sprintf("loaded %d Xiph streams", len(stations))}
+		source := "Xiph"
+		if len(stations) > 0 && stations[0].Source == "Radio Browser" {
+			source = "Radio Browser fallback"
+		}
+		return loadedMsg{stations: stations, status: fmt.Sprintf("loaded %d %s streams", len(stations), source)}
 	}
 }

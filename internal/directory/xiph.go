@@ -2,7 +2,9 @@ package directory
 
 import (
 	"context"
+	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"html"
 	"net/url"
 	"regexp"
@@ -33,12 +35,18 @@ func (c Client) XiphGenres(ctx context.Context) ([]string, error) {
 func (c Client) XiphSearch(ctx context.Context, query string) ([]Station, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
-		return c.xiphXML(ctx, "")
+		if stations, err := c.xiphXML(ctx, ""); err != nil || len(stations) > 0 {
+			return stations, err
+		}
+		return c.radioBrowserSearch(ctx, "")
 	}
 	if stations, err := c.xiphGenrePage(ctx, query); err == nil && len(stations) > 0 {
 		return stations, nil
 	}
-	return c.xiphXML(ctx, query)
+	if stations, err := c.xiphXML(ctx, query); err != nil || len(stations) > 0 {
+		return stations, err
+	}
+	return c.radioBrowserSearch(ctx, query)
 }
 
 func (c Client) xiphXML(ctx context.Context, query string) ([]Station, error) {
@@ -107,4 +115,72 @@ func filterXiphEntries(entries []struct {
 		}
 	}
 	return out
+}
+
+func (c Client) radioBrowserSearch(ctx context.Context, query string) ([]Station, error) {
+	params := url.Values{}
+	params.Set("hidebroken", "true")
+	params.Set("limit", "200")
+	params.Set("order", "clickcount")
+	params.Set("reverse", "true")
+	if query != "" {
+		params.Set("tag", query)
+	}
+	body, err := c.getString(ctx, "https://api.radio-browser.info/json/stations/search?"+params.Encode())
+	if err != nil {
+		return nil, err
+	}
+	return parseRadioBrowserStations(body)
+}
+
+func parseRadioBrowserStations(body string) ([]Station, error) {
+	var payload []struct {
+		Name        string `json:"name"`
+		URL         string `json:"url"`
+		URLResolved string `json:"url_resolved"`
+		Tags        string `json:"tags"`
+		Country     string `json:"country"`
+		Codec       string `json:"codec"`
+		Bitrate     int    `json:"bitrate"`
+		ClickCount  int    `json:"clickcount"`
+	}
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		return nil, err
+	}
+	out := make([]Station, 0, len(payload))
+	for _, entry := range payload {
+		streamURL := strings.TrimSpace(entry.URLResolved)
+		if streamURL == "" {
+			streamURL = strings.TrimSpace(entry.URL)
+		}
+		if entry.Name == "" || streamURL == "" {
+			continue
+		}
+		out = append(out, Station{
+			Name:        entry.Name,
+			Description: radioBrowserDescription(entry.Country, entry.Codec, entry.Bitrate, entry.Tags),
+			Genre:       entry.Tags,
+			URL:         streamURL,
+			Source:      "Radio Browser",
+			Listeners:   entry.ClickCount,
+		})
+	}
+	return out, nil
+}
+
+func radioBrowserDescription(country, codec string, bitrate int, tags string) string {
+	var parts []string
+	if country != "" {
+		parts = append(parts, country)
+	}
+	if codec != "" {
+		parts = append(parts, codec)
+	}
+	if bitrate > 0 {
+		parts = append(parts, fmt.Sprintf("%dkbps", bitrate))
+	}
+	if tags != "" {
+		parts = append(parts, tags)
+	}
+	return strings.Join(parts, " - ")
 }
