@@ -87,3 +87,44 @@ func TestSlashFocusesInputWithoutTypingSlash(t *testing.T) {
 		t.Fatalf("input value = %q, want empty", got.input.Value())
 	}
 }
+
+func TestFullPresetBankPromptsForReplacement(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	model := New(config.Config{Presets: fullPresets()})
+	model.mode = modeXiph
+	model.setStations([]directory.Station{{Name: "New", URL: "https://example.com/new"}})
+
+	next, _ := model.Update(tea.KeyMsg{Type: tea.KeyCtrlP, Alt: false})
+	got := next.(Model)
+
+	if got.replacing == nil {
+		t.Fatal("expected replacement prompt")
+	}
+	if got.cfg.Presets[0].URL != "https://example.com/0" {
+		t.Fatalf("preset changed before slot selection: %q", got.cfg.Presets[0].URL)
+	}
+}
+
+func TestPresetReplacementUsesSelectedSlot(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	model := New(config.Config{Presets: fullPresets()})
+	model.replacing = &directory.Station{Name: "New", URL: "https://example.com/new"}
+
+	next, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
+	got := next.(Model)
+
+	if got.replacing != nil {
+		t.Fatal("expected replacement prompt to close")
+	}
+	if got.cfg.Presets[2].URL != "https://example.com/new" {
+		t.Fatalf("slot 3 URL = %q", got.cfg.Presets[2].URL)
+	}
+}
+
+func fullPresets() []config.Preset {
+	presets := make([]config.Preset, config.PresetLimit)
+	for i := range presets {
+		presets[i] = config.Preset{Name: string(rune('A' + i)), URL: "https://example.com/" + string(rune('0'+i))}
+	}
+	return presets
+}

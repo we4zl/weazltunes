@@ -1,6 +1,10 @@
 package tui
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/bprendie/weazltunes/internal/config"
 	"github.com/bprendie/weazltunes/internal/directory"
 )
@@ -21,6 +25,54 @@ func (m *Model) promotePreset(st directory.Station) {
 		return
 	}
 	m.status = "added to presets"
+}
+
+func (m *Model) promotePresetOrPrompt(st directory.Station) {
+	if canPromoteDirectly(m.cfg.Presets, st.URL) {
+		m.promotePreset(st)
+		m.showPresets()
+		return
+	}
+	m.replacing = &st
+	m.showPresets()
+	m.status = "preset bank full - press 1-8 to replace a slot"
+	m.err = ""
+}
+
+func (m *Model) handlePresetReplacement(key string) bool {
+	if key == "esc" || key == "q" || key == "ctrl+c" {
+		return false
+	}
+	slot, err := strconv.Atoi(key)
+	if err != nil || slot < 1 || slot > config.PresetLimit {
+		m.err = "press 1-8 to choose a preset slot, or esc to cancel"
+		return true
+	}
+	if m.replacing == nil {
+		return false
+	}
+	st := *m.replacing
+	if !m.cfg.ReplacePreset(slot-1, presetFromStation(st)) || !m.saveConfig() {
+		return true
+	}
+	m.replacing = nil
+	m.showPresets()
+	m.list.Select(slot - 1)
+	m.status = fmt.Sprintf("replaced preset %d with %s", slot, st.Name)
+	m.err = ""
+	return true
+}
+
+func canPromoteDirectly(presets []config.Preset, url string) bool {
+	if len(presets) < config.PresetLimit {
+		return true
+	}
+	for _, preset := range presets {
+		if strings.EqualFold(preset.URL, url) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Model) startRenameSelected() {

@@ -46,6 +46,7 @@ type Model struct {
 	titlePoll  time.Time
 	energy     audio.Sample
 	renaming   *directory.Station
+	replacing  *directory.Station
 	width      int
 	height     int
 	visualizer Visualizer

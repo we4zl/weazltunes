@@ -3,6 +3,11 @@ package tui
 import tea "github.com/charmbracelet/bubbletea"
 
 func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
+	if m.replacing != nil {
+		if handled := m.handlePresetReplacement(msg.String()); handled {
+			return m, noop
+		}
+	}
 	switch msg.String() {
 	case "ctrl+c", "q":
 		m.stopMeter()
@@ -39,6 +44,7 @@ func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m, noop
 	case "esc":
 		m.renaming = nil
+		m.replacing = nil
 		m.input.SetValue("")
 		m.input.Prompt = tunePrompt
 		m.input.Blur()
@@ -75,23 +81,17 @@ func handleEnter(m Model) (Model, tea.Cmd) {
 func promoteSelectedOrInput(m *Model) {
 	if st, ok := stationFromURL(m.input.Value()); ok {
 		m.saveMyStation(st)
-		m.promotePreset(st)
+		m.promotePresetOrPrompt(st)
 		m.input.SetValue("")
 		m.input.Blur()
-		m.showPresets()
-		m.status = "added to presets"
 		return
 	}
 	if item, ok := m.list.SelectedItem().(stationItem); ok {
-		m.promotePreset(directoryStation(item))
-		m.showPresets()
-		m.status = "added to presets"
+		m.promotePresetOrPrompt(directoryStation(item))
 		return
 	}
 	if m.playing != nil {
-		m.promotePreset(*m.playing)
-		m.showPresets()
-		m.status = "added to presets"
+		m.promotePresetOrPrompt(*m.playing)
 	}
 }
 

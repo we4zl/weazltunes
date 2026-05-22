@@ -21,6 +21,24 @@ func TestPromotePresetCapsAtEightAndMovesDuplicateToTop(t *testing.T) {
 	}
 }
 
+func TestReplacePresetReplacesSelectedSlot(t *testing.T) {
+	cfg := Config{Presets: []Preset{
+		{Name: "One", URL: "https://example.com/1"},
+		{Name: "Two", URL: "https://example.com/2"},
+		{Name: "Three", URL: "https://example.com/3"},
+	}}
+
+	if !cfg.ReplacePreset(1, Preset{Name: "New", URL: "https://example.com/new"}) {
+		t.Fatal("expected replace to succeed")
+	}
+	if cfg.Presets[1].Name != "New" {
+		t.Fatalf("slot 2 = %q, want New", cfg.Presets[1].Name)
+	}
+	if len(cfg.Presets) != 3 {
+		t.Fatalf("len = %d, want 3", len(cfg.Presets))
+	}
+}
+
 func TestSaveMyStationUpsertsByURL(t *testing.T) {
 	cfg := Config{}
 	cfg.SaveMyStation(Preset{Name: "Old", URL: "https://example.com/stream"})

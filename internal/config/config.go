@@ -67,6 +67,24 @@ func (c *Config) PromotePreset(st Preset) {
 	}
 }
 
+func (c *Config) ReplacePreset(index int, st Preset) bool {
+	st.Name = strings.TrimSpace(st.Name)
+	st.URL = strings.TrimSpace(st.URL)
+	if st.URL == "" || index < 0 || index >= PresetLimit || index >= len(c.Presets) {
+		return false
+	}
+	if strings.EqualFold(c.Presets[index].URL, st.URL) {
+		c.Presets[index] = st
+		return true
+	}
+	c.Presets = removeByURL(c.Presets, st.URL)
+	if index >= len(c.Presets) {
+		return false
+	}
+	c.Presets[index] = st
+	return true
+}
+
 func (c *Config) RenamePreset(url, name string) bool {
 	return renameByURL(c.Presets, url, name)
 }
@@ -160,16 +178,19 @@ func renameByURL(stations []Preset, url, name string) bool {
 }
 
 func deleteByURL(stations []Preset, url string) ([]Preset, bool) {
+	next := removeByURL(stations, url)
+	return next, len(next) != len(stations)
+}
+
+func removeByURL(stations []Preset, url string) []Preset {
 	out := stations[:0]
-	deleted := false
 	for _, station := range stations {
 		if strings.EqualFold(station.URL, url) {
-			deleted = true
 			continue
 		}
 		out = append(out, station)
 	}
-	return out, deleted
+	return out
 }
 
 func moveByURL(stations []Preset, url string, delta int) ([]Preset, int) {
