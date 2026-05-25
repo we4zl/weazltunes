@@ -105,21 +105,21 @@ func noop() tea.Msg {
 
 func presetHotkeyIndex(key string) (int, bool) {
 	switch key {
-	case "ctrl+1":
+	case "alt+1":
 		return 0, true
-	case "ctrl+2", "ctrl+@":
+	case "alt+2":
 		return 1, true
-	case "ctrl+3":
+	case "alt+3":
 		return 2, true
-	case "ctrl+4", "ctrl+\\":
+	case "alt+4":
 		return 3, true
-	case "ctrl+5", "ctrl+]":
+	case "alt+5":
 		return 4, true
-	case "ctrl+6", "ctrl+^":
+	case "alt+6":
 		return 5, true
-	case "ctrl+7", "ctrl+_":
+	case "alt+7":
 		return 6, true
-	case "ctrl+8":
+	case "alt+8":
 		return 7, true
 	default:
 		return 0, false

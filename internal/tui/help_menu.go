@@ -30,7 +30,7 @@ func renderHelpMenu(width int) string {
 		{
 			{"space", "pause", crushMint},
 			{"enter", "play/add", crushMint},
-			{"ctrl+1-8", "play preset", crushMint},
+			{"alt+1-8", "play preset", crushMint},
 			{"s", "stop", crushGold},
 		},
 		{
