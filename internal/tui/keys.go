@@ -8,6 +8,10 @@ func handleKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 			return m, noop
 		}
 	}
+	if index, ok := presetHotkeyIndex(msg.String()); ok {
+		m.playPresetSlot(index)
+		return m, noop
+	}
 	switch msg.String() {
 	case "ctrl+c", "q":
 		m.stopMeter()
@@ -97,4 +101,27 @@ func promoteSelectedOrInput(m *Model) {
 
 func noop() tea.Msg {
 	return nil
+}
+
+func presetHotkeyIndex(key string) (int, bool) {
+	switch key {
+	case "ctrl+1":
+		return 0, true
+	case "ctrl+2", "ctrl+@":
+		return 1, true
+	case "ctrl+3":
+		return 2, true
+	case "ctrl+4", "ctrl+\\":
+		return 3, true
+	case "ctrl+5", "ctrl+]":
+		return 4, true
+	case "ctrl+6", "ctrl+^":
+		return 5, true
+	case "ctrl+7", "ctrl+_":
+		return 6, true
+	case "ctrl+8":
+		return 7, true
+	default:
+		return 0, false
+	}
 }

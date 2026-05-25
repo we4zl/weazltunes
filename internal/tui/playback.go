@@ -21,6 +21,21 @@ func (m *Model) play(st directory.Station) {
 	m.err = ""
 }
 
+func (m *Model) playPresetSlot(index int) {
+	if index < 0 || index >= len(m.cfg.Presets) {
+		m.err = "preset slot is empty"
+		return
+	}
+	m.showPresets()
+	m.list.Select(index)
+	m.play(directory.Station{
+		Name:        m.cfg.Presets[index].Name,
+		URL:         m.cfg.Presets[index].URL,
+		Source:      "Preset",
+		Description: m.cfg.Presets[index].URL,
+	})
+}
+
 func (m *Model) togglePause() {
 	paused, err := m.player.TogglePause()
 	if err != nil {

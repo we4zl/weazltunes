@@ -121,6 +121,33 @@ func TestPresetReplacementUsesSelectedSlot(t *testing.T) {
 	}
 }
 
+func TestPresetHotkeyIndex(t *testing.T) {
+	tests := map[string]int{
+		"ctrl+1":  0,
+		"ctrl+2":  1,
+		"ctrl+@":  1,
+		"ctrl+3":  2,
+		"ctrl+4":  3,
+		"ctrl+\\": 3,
+		"ctrl+5":  4,
+		"ctrl+]":  4,
+		"ctrl+6":  5,
+		"ctrl+^":  5,
+		"ctrl+7":  6,
+		"ctrl+_":  6,
+		"ctrl+8":  7,
+	}
+	for key, want := range tests {
+		got, ok := presetHotkeyIndex(key)
+		if !ok || got != want {
+			t.Fatalf("presetHotkeyIndex(%q) = %d, %v; want %d, true", key, got, ok, want)
+		}
+	}
+	if _, ok := presetHotkeyIndex("ctrl+9"); ok {
+		t.Fatal("ctrl+9 should not be a preset hotkey")
+	}
+}
+
 func fullPresets() []config.Preset {
 	presets := make([]config.Preset, config.PresetLimit)
 	for i := range presets {
