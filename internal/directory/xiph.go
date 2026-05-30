@@ -2,14 +2,14 @@ package directory
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"html"
 	"net/url"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/bprendie/weazltunes/internal/security"
 )
 
 func (c Client) XiphGenres(ctx context.Context) ([]string, error) {
@@ -21,7 +21,7 @@ func (c Client) XiphGenres(ctx context.Context) ([]string, error) {
 	seen := map[string]bool{}
 	var genres []string
 	for _, m := range re.FindAllStringSubmatch(body, -1) {
-		g := html.UnescapeString(strings.TrimSpace(m[2]))
+		g := security.SanitizeGenre(html.UnescapeString(m[2]))
 		if g == "" || seen[strings.ToLower(g)] {
 			continue
 		}
@@ -84,10 +84,10 @@ func (c Client) xiphGenrePage(ctx context.Context, genre string) ([]Station, err
 			continue
 		}
 		out = append(out, Station{
-			Name:        html.UnescapeString(name),
-			Description: strings.TrimSpace(html.UnescapeString(stripTags(block[2]))),
-			Genre:       genre,
-			URL:         link,
+			Name:        security.SanitizeStationName(html.UnescapeString(name)),
+			Description: security.SanitizeDescription(html.UnescapeString(stripTags(block[2]))),
+			Genre:       security.SanitizeGenre(genre),
+			URL:         security.SanitizeURL(link),
 			Source:      "Xiph",
 		})
 	}
@@ -109,7 +109,15 @@ func filterXiphEntries(entries []struct {
 		if e.ListenURL == "" || (q != "" && !strings.Contains(haystack, q)) {
 			continue
 		}
-		out = append(out, Station{Name: e.ServerName, Description: e.ServerDescription, Genre: e.Genre, URL: e.ListenURL, Source: "Xiph", Listeners: e.Listeners, NowPlaying: e.CurrentSong})
+		out = append(out, Station{
+			Name:        security.SanitizeStationName(e.ServerName),
+			Description: security.SanitizeDescription(e.ServerDescription),
+			Genre:       security.SanitizeGenre(e.Genre),
+			URL:         security.SanitizeURL(e.ListenURL),
+			Source:      "Xiph",
+			Listeners:   e.Listeners,
+			NowPlaying:  security.SanitizeNowPlaying(e.CurrentSong),
+		})
 		if len(out) >= 200 {
 			break
 		}
@@ -141,56 +149,4 @@ func (c Client) radioBrowserSearch(ctx context.Context, query string) ([]Station
 		return nil, err
 	}
 	return parseRadioBrowserStations(body)
-}
-
-func parseRadioBrowserStations(body string) ([]Station, error) {
-	var payload []struct {
-		Name        string `json:"name"`
-		URL         string `json:"url"`
-		URLResolved string `json:"url_resolved"`
-		Tags        string `json:"tags"`
-		Country     string `json:"country"`
-		Codec       string `json:"codec"`
-		Bitrate     int    `json:"bitrate"`
-		ClickCount  int    `json:"clickcount"`
-	}
-	if err := json.Unmarshal([]byte(body), &payload); err != nil {
-		return nil, err
-	}
-	out := make([]Station, 0, len(payload))
-	for _, entry := range payload {
-		streamURL := strings.TrimSpace(entry.URLResolved)
-		if streamURL == "" {
-			streamURL = strings.TrimSpace(entry.URL)
-		}
-		if entry.Name == "" || streamURL == "" {
-			continue
-		}
-		out = append(out, Station{
-			Name:        entry.Name,
-			Description: radioBrowserDescription(entry.Country, entry.Codec, entry.Bitrate, entry.Tags),
-			Genre:       entry.Tags,
-			URL:         streamURL,
-			Source:      "Radio Browser",
-			Listeners:   entry.ClickCount,
-		})
-	}
-	return out, nil
-}
-
-func radioBrowserDescription(country, codec string, bitrate int, tags string) string {
-	var parts []string
-	if country != "" {
-		parts = append(parts, country)
-	}
-	if codec != "" {
-		parts = append(parts, codec)
-	}
-	if bitrate > 0 {
-		parts = append(parts, fmt.Sprintf("%dkbps", bitrate))
-	}
-	if tags != "" {
-		parts = append(parts, tags)
-	}
-	return strings.Join(parts, " - ")
 }

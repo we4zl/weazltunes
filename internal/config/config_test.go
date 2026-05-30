@@ -1,6 +1,10 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestPromotePresetCapsAtEightAndMovesDuplicateToTop(t *testing.T) {
 	cfg := Config{}
@@ -90,5 +94,73 @@ func TestMoveByURLBounds(t *testing.T) {
 	}
 	if _, ok := cfg.MoveMyStation("https://example.com/missing", 1); ok {
 		t.Fatal("expected missing URL move to fail")
+	}
+}
+
+func TestLoadNormalizesConfig(t *testing.T) {
+	configRoot := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configRoot)
+	dir := filepath.Join(configRoot, "weazltunes")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	raw := `{
+  "presets": [
+    {"name": "One\u001b[31m", "url": "https://example.com/1"},
+    {"name": "Bad", "url": "file:///tmp/song.mp3"},
+    {"name": "Dup", "url": "https://example.com/1"},
+    {"name": "Two", "url": "https://example.com/2"},
+    {"name": "Three", "url": "https://example.com/3"},
+    {"name": "Four", "url": "https://example.com/4"},
+    {"name": "Five", "url": "https://example.com/5"},
+    {"name": "Six", "url": "https://example.com/6"},
+    {"name": "Seven", "url": "https://example.com/7"},
+    {"name": "Eight", "url": "https://example.com/8"},
+    {"name": "Nine", "url": "https://example.com/9"}
+  ],
+  "my_stations": [
+    {"name": "Saved\nStation", "url": "https://example.com/saved"},
+    {"name": "Nope", "url": "ftp://example.com/nope"}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Presets) != PresetLimit {
+		t.Fatalf("expected %d presets, got %d", PresetLimit, len(cfg.Presets))
+	}
+	if cfg.Presets[0].Name != "One[31m" {
+		t.Fatalf("preset name was not sanitized: %q", cfg.Presets[0].Name)
+	}
+	if cfg.Presets[1].URL != "https://example.com/2" {
+		t.Fatalf("invalid or duplicate preset was not removed: %#v", cfg.Presets)
+	}
+	if len(cfg.MyStations) != 1 || cfg.MyStations[0].Name != "SavedStation" {
+		t.Fatalf("my stations not normalized: %#v", cfg.MyStations)
+	}
+}
+
+func TestSaveUsesPrivateConfigDir(t *testing.T) {
+	configRoot := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configRoot)
+
+	if err := Save(Config{Presets: []Preset{{Name: "One", URL: "https://example.com/1"}}}); err != nil {
+		t.Fatal(err)
+	}
+	path, err := Path()
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Dir(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o700 {
+		t.Fatalf("config dir mode = %o, want 700", got)
 	}
 }

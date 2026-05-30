@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/bprendie/weazltunes/internal/security"
 )
 
 type somaPlaylist struct {
@@ -49,13 +51,13 @@ func (c Client) SomaFM(ctx context.Context) ([]Station, error) {
 			continue
 		}
 		out = append(out, Station{
-			Name:        ch.Title,
-			Description: strings.TrimSpace(ch.Description),
-			Genre:       ch.Genre,
-			URL:         stream,
+			Name:        security.SanitizeStationName(ch.Title),
+			Description: security.SanitizeDescription(ch.Description),
+			Genre:       security.SanitizeGenre(ch.Genre),
+			URL:         security.SanitizeURL(stream),
 			Source:      "SomaFM",
 			Listeners:   ch.Listeners,
-			NowPlaying:  ch.LastPlaying,
+			NowPlaying:  security.SanitizeNowPlaying(ch.LastPlaying),
 		})
 	}
 	return out, nil

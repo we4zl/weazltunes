@@ -12,10 +12,14 @@ import (
 )
 
 type socketControl struct {
-	path string
+	path   string
+	tmpDir string
 }
 
 func newMPVControl() mpvControl {
+	if tmpDir, err := os.MkdirTemp("", "weazltunes-*"); err == nil {
+		return &socketControl{path: filepath.Join(tmpDir, "mpv.sock"), tmpDir: tmpDir}
+	}
 	name := "weazltunes-" + strconv.Itoa(os.Getpid()) + "-" + strconv.FormatInt(time.Now().UnixNano(), 10) + ".sock"
 	return &socketControl{path: filepath.Join(os.TempDir(), name)}
 }
@@ -47,4 +51,7 @@ func (c *socketControl) request(command string) (string, error) {
 
 func (c *socketControl) close() {
 	_ = os.Remove(c.path)
+	if c.tmpDir != "" {
+		_ = os.RemoveAll(c.tmpDir)
+	}
 }

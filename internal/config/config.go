@@ -26,7 +26,7 @@ func Load() (Config, error) {
 	if err != nil {
 		return cfg, err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := ensureConfigDir(filepath.Dir(path)); err != nil {
 		return cfg, err
 	}
 	b, err := os.ReadFile(path)
@@ -39,6 +39,7 @@ func Load() (Config, error) {
 	if err := json.Unmarshal(b, &cfg); err != nil {
 		return cfg, err
 	}
+	cfg.normalize()
 	if len(cfg.Presets) == 0 {
 		cfg.Presets = defaultConfig().Presets
 	}
@@ -46,18 +47,16 @@ func Load() (Config, error) {
 }
 
 func (c *Config) SaveMyStation(st Preset) {
-	st.Name = strings.TrimSpace(st.Name)
-	st.URL = strings.TrimSpace(st.URL)
-	if st.URL == "" {
+	st, ok := cleanPreset(st)
+	if !ok {
 		return
 	}
 	c.MyStations = upsert(c.MyStations, st)
 }
 
 func (c *Config) PromotePreset(st Preset) {
-	st.Name = strings.TrimSpace(st.Name)
-	st.URL = strings.TrimSpace(st.URL)
-	if st.URL == "" {
+	st, ok := cleanPreset(st)
+	if !ok {
 		return
 	}
 	presets := upsert(c.Presets, st)
@@ -68,9 +67,8 @@ func (c *Config) PromotePreset(st Preset) {
 }
 
 func (c *Config) ReplacePreset(index int, st Preset) bool {
-	st.Name = strings.TrimSpace(st.Name)
-	st.URL = strings.TrimSpace(st.URL)
-	if st.URL == "" || index < 0 || index >= PresetLimit || index >= len(c.Presets) {
+	st, ok := cleanPreset(st)
+	if !ok || index < 0 || index >= PresetLimit || index >= len(c.Presets) {
 		return false
 	}
 	if strings.EqualFold(c.Presets[index].URL, st.URL) {
@@ -122,9 +120,10 @@ func Save(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := ensureConfigDir(filepath.Dir(path)); err != nil {
 		return err
 	}
+	cfg.normalize()
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
@@ -140,6 +139,13 @@ func Path() (string, error) {
 	return filepath.Join(dir, "weazltunes", "config.json"), nil
 }
 
+func ensureConfigDir(dir string) error {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	return os.Chmod(dir, 0o700)
+}
+
 func defaultConfig() Config {
 	return Config{
 		Presets: []Preset{
@@ -150,60 +156,4 @@ func defaultConfig() Config {
 			{Name: "Deep Space One", URL: "https://somafm.com/deepspaceone.pls"},
 		},
 	}
-}
-
-func upsert(stations []Preset, st Preset) []Preset {
-	out := []Preset{st}
-	for _, existing := range stations {
-		if strings.EqualFold(existing.URL, st.URL) {
-			continue
-		}
-		out = append(out, existing)
-	}
-	return out
-}
-
-func renameByURL(stations []Preset, url, name string) bool {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return false
-	}
-	for i := range stations {
-		if strings.EqualFold(stations[i].URL, url) {
-			stations[i].Name = name
-			return true
-		}
-	}
-	return false
-}
-
-func deleteByURL(stations []Preset, url string) ([]Preset, bool) {
-	next := removeByURL(stations, url)
-	return next, len(next) != len(stations)
-}
-
-func removeByURL(stations []Preset, url string) []Preset {
-	out := stations[:0]
-	for _, station := range stations {
-		if strings.EqualFold(station.URL, url) {
-			continue
-		}
-		out = append(out, station)
-	}
-	return out
-}
-
-func moveByURL(stations []Preset, url string, delta int) ([]Preset, int) {
-	for i := range stations {
-		if !strings.EqualFold(stations[i].URL, url) {
-			continue
-		}
-		next := i + delta
-		if next < 0 || next >= len(stations) {
-			return stations, -1
-		}
-		stations[i], stations[next] = stations[next], stations[i]
-		return stations, next
-	}
-	return stations, -1
 }
